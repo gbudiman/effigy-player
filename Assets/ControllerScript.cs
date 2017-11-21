@@ -12,6 +12,7 @@ public class ControllerScript : MonoBehaviour {
   Text timestamp_text;
   Image fig_renderer;
   Image interface_occlussion;
+	RectTransform scrolling_content;
   SpriteRenderer dummy_sprite;
   List<Sprite> sprites;
   Slider time_slider;
@@ -24,11 +25,14 @@ public class ControllerScript : MonoBehaviour {
   float video_time;
   float frame_time;
   bool frame_has_been_updated;
+	bool is_loading_figs;
   const float FT = 0.05f;
   bool natural_progression;
   float playback_rate = 1f;
+	int fig_load_count;
   Transform content;
   Image scroll_content_prefab;
+	Text load_status;
 
 	// Use this for initialization
 	void Start () {
@@ -76,13 +80,16 @@ public class ControllerScript : MonoBehaviour {
     natural_progression = false;
     playback_speed = GameObject.FindObjectOfType<Dropdown>();
     audio_source = GameObject.FindObjectOfType<AudioSource>();
+		scrolling_content = GameObject.Find ("Content").GetComponent<RectTransform> ();
+		//scrolling_content.localPosition = new Vector3 (0, 40, 0);
 
+		is_loading_figs = false;
+		load_status = GameObject.Find("LoadStatus").GetComponentInChildren<Text>();
     //load_all_sprites();
     //load_figs();
   }
 
   void load_figs(string filepath) {
-    content = GameObject.Find("Content").GetComponent<Transform>();
     scroll_content_prefab = Resources.Load<Image>("ScrollContentPrefab");
 
     List<int> ws;
@@ -105,12 +112,10 @@ public class ControllerScript : MonoBehaviour {
       stream_reader.Close();
     }
 
-
-
-    content.GetComponent<RectTransform>().sizeDelta = new Vector2(750, 88);
+    scrolling_content.sizeDelta = new Vector2(750, 88);
 
     int occ = 0;
-    int mbase = -180; //60;
+    int mbase = -800; //60;
     int mult = 100;
     int total_width = 10;
 
@@ -119,8 +124,9 @@ public class ControllerScript : MonoBehaviour {
       FigClickListener fcl = p.GetComponentInChildren<FigClickListener>();
       Vector3 tp = p.transform.position;
       p.sprite = sprites[w];
-      p.transform.position = new Vector3(mbase + (mult * occ), tp.y, tp.z);
       fcl.frame_jump = w;
+			p.transform.parent = scrolling_content;
+			p.GetComponent<RectTransform>().localPosition = new Vector3(mbase + (mult * occ), 0, 0);
 
       occ++;
     }
@@ -128,10 +134,17 @@ public class ControllerScript : MonoBehaviour {
     total_width += occ * mult;
 
     if (total_width > 750) {
-      content.GetComponent<RectTransform>().sizeDelta = new Vector2(total_width / 2, 88);
+      scrolling_content.sizeDelta = new Vector2(total_width - 400, 88);
     }
+
+		scrolling_content.anchoredPosition3D = new Vector3 (0, 0, 0);
   }
-  public void load_all_sprites() {
+
+	public void load_all_sprites() {
+		StartCoroutine ("_load_all_sprites");
+	}
+
+  public IEnumerator _load_all_sprites() {
     sprites = new List<Sprite>();
 
     //foreach (Object res in Resources.LoadAll<Sprite>("disney")) {
@@ -142,8 +155,10 @@ public class ControllerScript : MonoBehaviour {
     //  audio_source.clip = (AudioClip) res;
     //}
 
+		is_loading_figs = true;
+		fig_load_count = 0;
     InputField infield = GameObject.Find("MovieName").GetComponent<InputField>();
-    Text load_status = GameObject.Find("LoadStatus").GetComponentInChildren<Text>();
+    
     string path = Application.dataPath;
     //string rel = Path.GetFullPath(Path.Combine(path, @"../../input/" + infield.text)); // apple"));
     string rel = infield.text;
@@ -165,16 +180,21 @@ public class ControllerScript : MonoBehaviour {
           break;
       }
 
-      
+//			if (fig_load_count == 500) {
+//				break;
+//			}
+
+			fig_load_count++;
+			yield return null;
     }
+		is_loading_figs = false;
+
     load_status.text = infield.text;
     sprites_count = sprites.Count;
   }
 
   void load_audio_clip(string filepath) {
     string www_path = "file://" + filepath;
-    Debug.Log(www_path);
-
     WWW audio_loader = new WWW(www_path);
 
     while (!audio_loader.isDone) {
@@ -184,27 +204,24 @@ public class ControllerScript : MonoBehaviour {
     audio_source.clip = audio_loader.GetAudioClip(false, false, AudioType.WAV);
   }
 
-  Texture2D load_texture(string filepath) {
-    byte[] bdata;
-    Texture2D t2d;
-    bdata = File.ReadAllBytes(filepath);
-    t2d = new Texture2D(352, 288);
-    t2d.LoadImage(bdata);
-
-    return t2d;
-  }
-
   Sprite load_new_sprite(string filepath) {
-    Sprite new_sprite = new Sprite();
-    Texture2D sprite_texture = load_texture(filepath);
-    new_sprite = Sprite.Create(sprite_texture, new Rect(0, 0, sprite_texture.width, sprite_texture.height), new Vector2(0.5f, 0.5f), 100f);
+		WWW image_www = new WWW ("file://" + filepath);
+		Texture2D sprite_texture =  new Texture2D(352, 288);
+		image_www.LoadImageIntoTexture (sprite_texture);
 
-    return new_sprite;
+    return Sprite.Create(sprite_texture, new Rect(0, 0, sprite_texture.width, sprite_texture.height), new Vector2(0.5f, 0.5f), 100f);
   }
 
 	// Update is called once per frame
 	void Update () {
     update_video_frame();
+		update_fig_progress ();
+	}
+
+	void update_fig_progress () {
+		if (is_loading_figs) {
+			load_status.text = fig_load_count.ToString ();
+		}
 	}
 
   void update_video_frame() {
