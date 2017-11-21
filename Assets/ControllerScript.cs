@@ -96,6 +96,10 @@ public class ControllerScript : MonoBehaviour {
     string line = null;
     StreamReader stream_reader = new StreamReader(filepath);
 
+		foreach (Transform child in scrolling_content.transform) {
+			GameObject.Destroy (child.gameObject);
+		}
+
     using (stream_reader) {
       ws = new List<int>();
 
