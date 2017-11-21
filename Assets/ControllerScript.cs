@@ -119,9 +119,21 @@ public class ControllerScript : MonoBehaviour {
     scrolling_content.sizeDelta = new Vector2(750, 88);
 
     int occ = 0;
-    int mbase = -800; //60;
+    int mbase = 0; //60;
     int mult = 100;
-    int total_width = 10;
+    int total_width = ws.Count * mult;
+
+    Debug.Log(ws.Count);
+    //if (total_width > 750) {
+    //  scrolling_content.sizeDelta = new Vector2(total_width - 400, 88);
+    //}
+    //scrolling_content.offsetMin = new Vector2(total_width - 400, 44);
+    //scrolling_content.offsetMax = new Vector2(-(total_width - 400), 0);
+
+    scrolling_content.offsetMin = new Vector2(-(total_width / 2 - 200), 0);
+    scrolling_content.offsetMax = new Vector2((total_width / 2 - 200), 80);
+    scrolling_content.anchoredPosition3D = new Vector3(0, 45, 0);
+    mbase = -total_width / 2;
 
     foreach (int w in ws) {
       Image p = Instantiate<Image>(scroll_content_prefab, content);
@@ -130,18 +142,10 @@ public class ControllerScript : MonoBehaviour {
       p.sprite = sprites[w];
       fcl.frame_jump = w;
 			p.transform.parent = scrolling_content;
-			p.GetComponent<RectTransform>().localPosition = new Vector3(mbase + (mult * occ), 0, 0);
-
-      occ++;
+			p.GetComponent<RectTransform>().anchoredPosition3D = new Vector3(mbase + (mult * occ++), 0, 0);
     }
 
-    total_width += occ * mult;
-
-    if (total_width > 750) {
-      scrolling_content.sizeDelta = new Vector2(total_width - 400, 88);
-    }
-
-		scrolling_content.anchoredPosition3D = new Vector3 (0, 0, 0);
+		
   }
 
 	public void load_all_sprites() {
