@@ -8,6 +8,8 @@ public class ControllerScript : MonoBehaviour {
   Canvas canvas;
   Button playpause_button;
   Button timestamp;
+  Button reset_button;
+  Button load_movie_button;
   Text playpause_button_text;
   Text timestamp_text;
   Image fig_renderer;
@@ -34,8 +36,8 @@ public class ControllerScript : MonoBehaviour {
   Image scroll_content_prefab;
 	Text load_status;
 
-	// Use this for initialization
-	void Start () {
+  // Use this for initialization
+  void Start () {
     play_state = PlayState.paused;
     canvas = GameObject.FindObjectOfType<Canvas>();
     foreach (Button button in canvas.GetComponentsInChildren<Button>()) {
@@ -46,6 +48,12 @@ public class ControllerScript : MonoBehaviour {
         case "Timestamp":
           timestamp = button;
           timestamp_text = timestamp.GetComponentInChildren<Text>();
+          break;
+        case "ResetPlayback":
+          reset_button = button;
+          break;
+        case "MovieLoader":
+          load_movie_button = button;
           break;
       }
     }
@@ -172,6 +180,14 @@ public class ControllerScript : MonoBehaviour {
     string rel = infield.text;
 
     load_status.text = "Loading...";
+    //Debug.Log(playpause_button);
+    //Debug.Log(reset_button);
+    //Debug.Log(load_movie_button);
+    playpause_button.interactable = false;
+    reset_button.interactable = false;
+    load_movie_button.interactable = false;
+    load_movie_button.GetComponentInChildren<Text>().text = "Loading...";
+
     foreach (string file in System.IO.Directory.GetFiles(rel)) {
       string extension = Path.GetExtension(file);
 
@@ -199,6 +215,11 @@ public class ControllerScript : MonoBehaviour {
 
     load_status.text = infield.text;
     sprites_count = sprites.Count;
+
+    playpause_button.interactable = true;
+    reset_button.interactable = true;
+    load_movie_button.interactable = true;
+    load_movie_button.GetComponentInChildren<Text>().text = "Load Movie";
   }
 
   void load_audio_clip(string filepath) {
@@ -214,8 +235,8 @@ public class ControllerScript : MonoBehaviour {
 
   Sprite load_new_sprite(string filepath) {
 		WWW image_www = new WWW ("file://" + filepath);
-		Texture2D sprite_texture =  new Texture2D(352, 288);
-		image_www.LoadImageIntoTexture (sprite_texture);
+    Texture2D sprite_texture = new Texture2D(352, 288);
+    image_www.LoadImageIntoTexture (sprite_texture);
 
     return Sprite.Create(sprite_texture, new Rect(0, 0, sprite_texture.width, sprite_texture.height), new Vector2(0.5f, 0.5f), 100f);
   }
@@ -286,6 +307,7 @@ public class ControllerScript : MonoBehaviour {
       audio_source.time = video_time;
     }
     update_renderer_sprite();
+    //update_time_slider();
   }
 
   void update_renderer_sprite() {
